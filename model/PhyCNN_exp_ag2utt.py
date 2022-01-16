@@ -30,6 +30,7 @@ class DeepPhyLSTM:
         
         # placeholders for data
         tf.compat.v1.disable_eager_execution()
+
         self.learning_rate = tf.compat.v1.placeholder(tf.float32, shape=[])
         self.eta_tt_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, None, self.eta_tt.shape[2]])
         self.ag_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, None, 1])
@@ -49,6 +50,7 @@ class DeepPhyLSTM:
         #                                                                  'maxcor': 50,
         #                                                                  'maxls': 50,
         #                                                                  'ftol': 1 * np.finfo(float).eps})
+        self.optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate = self.learning_rate).minimize(self.loss)
 
         self.optimizer_Adam = tf.compat.v1.train.AdamOptimizer(learning_rate = self.learning_rate)
         self.train_op = self.optimizer_Adam.minimize(self.loss)
@@ -112,10 +114,11 @@ class DeepPhyLSTM:
         if bfgs == 1:
             tf_dict_all = {self.eta_tt_tf: self.eta_tt, self.ag_tf: self.ag, self.learning_rate: learning_rate}
 
-            self.optimizer.minimize(self.sess,
-                                    feed_dict=tf_dict_all,
-                                    fetches=[self.loss],
-                                    loss_callback=self.callback)
+            # self.optimizer.minimize(self.sess,
+            #                         feed_dict=tf_dict_all,
+            #                         fetches=[self.loss],
+            #                         loss_callback=self.callback)
+            self.sess.run(self.optimizer, feed_dict=tf_dict_all)
 
             Loss.append(self.sess.run(self.loss, tf_dict))
 
@@ -207,7 +210,7 @@ with tf.device('/device:GPU:1'):
     # Training
     model = DeepPhyLSTM(eta_tt_train, ag_train, Phi_t)
 
-    Loss = model.train(num_epochs=10000, batch_size=N_train, learning_rate=1e-3, bfgs=1)
+    Loss = model.train(num_epochs=2, batch_size=N_train, learning_rate=1e-3, bfgs=1)
  
     train_loss = Loss
 
@@ -304,7 +307,7 @@ with tf.device('/device:GPU:1'):
     ax = plt.gca()
     ax.invert_xaxis()
 
-scipy.io.savemat(dataDir + 'results/results_exp_ag2utt.mat',
+scipy.io.savemat('results/results_exp_ag2utt.mat',
                  {'y_train_ref': y_train_ref, 'yt_train_ref': yt_train_ref, 'ytt_train_ref': ytt_train_ref,
                   'y_train_pred': y_train_pred, 'yt_train_pred': yt_train_pred, 'ytt_train_pred': ytt_train_pred,
                   'y_pred_ref': y_pred_ref, 'yt_pred_ref': yt_pred_ref, 'ytt_pred_ref': ytt_pred_ref,
