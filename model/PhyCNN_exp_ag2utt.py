@@ -1,12 +1,9 @@
-"""
-@author: Ruiyang Zhang
-"""
-
 import tensorflow as tf
 import keras
 from keras.models import Sequential
 from keras.layers import Dropout, Dense
-from keras.optimizers import RMSprop, Adagrad, Adadelta, Adam, Adamax, Nadam, SGD, TFOptimizer
+from tensorflow.keras.optimizers import RMSprop, Adagrad, Adadelta, Adam, Adamax, Nadam, SGD 
+# TFOptimizer
 from keras.layers import Conv1D, Flatten, LSTM, Reshape, BatchNormalization, Activation, UpSampling1D, ZeroPadding1D, PReLU
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
@@ -28,13 +25,14 @@ class DeepPhyLSTM:
         self.Phi_t = Phi_t
 
         # tf placeholders and graph
-        self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
+        self.sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(allow_soft_placement=True,
                                                      log_device_placement=True))
         
         # placeholders for data
-        self.learning_rate = tf.placeholder(tf.float32, shape=[])
-        self.eta_tt_tf = tf.placeholder(tf.float32, shape=[None, None, self.eta_tt.shape[2]])
-        self.ag_tf = tf.placeholder(tf.float32, shape=[None, None, 1])
+        tf.compat.v1.disable_eager_execution()
+        self.learning_rate = tf.compat.v1.placeholder(tf.float32, shape=[])
+        self.eta_tt_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, None, self.eta_tt.shape[2]])
+        self.ag_tf = tf.compat.v1.placeholder(tf.float32, shape=[None, None, 1])
 
         # physics informed neural networks
         self.eta_pred, self.eta_t_pred, self.eta_tt_pred, = self.net_structure(self.ag_tf)
@@ -44,18 +42,18 @@ class DeepPhyLSTM:
         self.loss = tf.reduce_mean(tf.square(self.eta_tt_tf - self.eta_tt_pred)) + tf.reduce_mean(tf.square(self.eta_pred[:,:,0:10]))
 
         # optimizers
-        self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
-                                                                method='L-BFGS-B',
-                                                                options={'maxiter': 20000,
-                                                                         'maxfun': 50000,
-                                                                         'maxcor': 50,
-                                                                         'maxls': 50,
-                                                                         'ftol': 1 * np.finfo(float).eps})
+        # self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
+        #                                                         method='L-BFGS-B',
+        #                                                         options={'maxiter': 20000,
+        #                                                                  'maxfun': 50000,
+        #                                                                  'maxcor': 50,
+        #                                                                  'maxls': 50,
+        #                                                                  'ftol': 1 * np.finfo(float).eps})
 
-        self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate = self.learning_rate)
+        self.optimizer_Adam = tf.compat.v1.train.AdamOptimizer(learning_rate = self.learning_rate)
         self.train_op = self.optimizer_Adam.minimize(self.loss)
 
-        init = tf.global_variables_initializer()
+        init = tf.compat.v1.global_variables_initializer()
         self.sess.run(init)
 
     def CNN_model(self, X):
@@ -139,7 +137,7 @@ class DeepPhyLSTM:
 if __name__ == "__main__":
 
     # load data
-    dataDir = ".../"
+    dataDir = "data/"
     mat = scipy.io.loadmat(dataDir + 'data_exp.mat')
 
     ag_data = mat['input_tf'][:, 0:2500]
@@ -170,8 +168,7 @@ if __name__ == "__main__":
     temp2 = np.concatenate([np.zeros([n - 2, 2]), 1 / 2 * np.identity(n - 2)], axis=1)
     phi2 = temp1 + temp2
     phi3 = np.concatenate([np.zeros([n - 3, ]), np.array([1 / 2, -2, 3 / 2])])
-    Phi_t = 1 / dt * np.concatenate(
-            [np.reshape(phi1, [1, phi1.shape[0]]), phi2, np.reshape(phi3, [1, phi3.shape[0]])], axis=0)
+    Phi_t = 1 / dt * np.concatenate([ np.reshape(phi1, [1, phi1.shape[0]]), phi2, np.reshape(phi3, [1, phi3.shape[0]]) ], axis=0)
 
     ag_star = ag_all
     eta_star = u_all
@@ -201,10 +198,10 @@ if __name__ == "__main__":
 with tf.device('/device:GPU:1'):
     # with tf.device('/cpu:0'):
 
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
     # config.gpu_options.per_process_gpu_memory_fraction = 0.4
-    session = tf.Session(config=config)
+    session = tf.compat.v1.Session(config=config)
     # tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
     # Training
