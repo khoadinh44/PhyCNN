@@ -198,8 +198,8 @@ if __name__ == "__main__":
     g_train = g
 
 
-with tf.device('/device:GPU:1'):
-    # with tf.device('/cpu:0'):
+# with tf.device('/device:GPU:1'):
+with tf.device('/cpu:0'):
 
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
